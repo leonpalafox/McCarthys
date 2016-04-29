@@ -2,27 +2,22 @@
 import numpy as np
 import csv
 import pylab as plt
-from pymc import *
+import pymc as pm
+from sklearn import mixture
+import sys
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 filename = "C:\Users\leon\Documents\Data\McCarthys.dat"
 raw_data = list(csv.reader(open(filename, 'rb')))
 data = np.zeros((256,2))
 for idx,line in enumerate(raw_data):
     data[idx, :] =  line[0].split()
-
- 
-theta = Uniform("theta", lower=0, upper=1)
-bern = Bernoulli("bern", p=theta, size=len(data))
- 
-mean1 = Uniform('mean1', lower=min(data), upper=max(data))
-mean2 = Uniform('mean2', lower=min(data), upper=max(data))
-std_dev = Uniform('std_dev', lower=0, upper=50)
- 
-@deterministic(plot=False)
-def mean(bern=bern, mean1=mean1, mean2=mean2):
-    return bern * mean1 + (1 - ber) * mean2
- 
-@deterministic(plot=False)
-def precision(std_dev=std_dev):
-    return 1.0 / (std_dev * std_dev)
- 
-process = Normal('process', mu=mean, tau=precision, value=data, observed=True)
+master_data = np.array([])
+for line in data:
+    new_data = np.repeat(line[0], line[1])
+    master_data = np.append(master_data, new_data)
+master_data = master_data[:, None]
+clf = mixture.GMM(n_components=2)
+clf.fit(master_data)
+plt.hist(master_data, 100, normed = True)
+plt.plot(gaussian(np.linspace(0,50,100), clf.means_[0], clf.covars_[0]))
